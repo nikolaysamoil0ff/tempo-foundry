@@ -23,7 +23,7 @@ If you are working in VSCode, we recommend you install the [rust-analyzer](https
 }
 ```
 
-Note that we use Rust's latest `nightly` for formatting. If you see `;` being inserted by your code editor it is a good indication you are on `stable`.
+Note that we use Rust's latest `nightly` for formatting. If you see `;` being inserted by your code editor, it likely means `nightly` is not configured.
 
 ## Getting started
 
@@ -81,7 +81,7 @@ If `make test` passes locally, that's a good sign that CI will be green as well.
 
 ## Release Features
 
-Nightly/stable release builds derive their enabled functionality from the shared `RUST_FEATURES` environment variable in `.github/workflows/release.yml` and `.github/workflows/docker-publish.yml`. Keep that list aligned with the default `FEATURES` value in the root `Makefile` so published artifacts expose the same CLI surface area (wallet backends, allocators, tracers, etc.) as local builds.
+Nightly/stable release builds derive their enabled functionality from the shared `RUST_FEATURES` environment variable in `.github/workflows/release.yml`. Keep that list aligned with the default `FEATURES` value in the root `Makefile` so published artifacts expose the same CLI surface area (wallet backends, allocators, tracers, etc.) as local builds.
 
 [foundry-book]: https://book.getfoundry.sh
 [cargo-workspace]: https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
