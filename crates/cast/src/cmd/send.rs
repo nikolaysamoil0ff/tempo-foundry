@@ -1,11 +1,15 @@
 use std::{str::FromStr, time::Duration};
 
 use crate::{
-    tempo::sign_with_access_key,
+    tempo::{
+        iso4217::{is_iso4217_currency, iso4217_warning_message},
+        sign_with_access_key,
+    },
     tx::{self, CastTxBuilder, CastTxSender, SendTxOpts},
 };
 use alloy_ens::NameOrAddress;
 use alloy_network::EthereumWallet;
+use alloy_primitives::Address;
 use alloy_provider::{Provider, ProviderBuilder};
 use alloy_signer::Signer;
 use clap::Parser;
@@ -16,6 +20,7 @@ use foundry_cli::{
 };
 use foundry_wallets::WalletSigner;
 use tempo_alloy::{TempoNetwork, rpc::TempoTransactionRequest};
+use tempo_contracts::precompiles::TIP20_FACTORY_ADDRESS;
 
 /// CLI arguments for `cast send`.
 #[derive(Debug, Parser)]
@@ -50,6 +55,10 @@ pub struct SendTxArgs {
     #[arg(long, requires = "from")]
     unlocked: bool,
 
+    /// Skip all confirmation prompts (i.e. non-ISO-4217 currency warnings)
+    #[arg(long)]
+    force: bool,
+
     #[command(flatten)]
     tx: TransactionOpts,
 }
@@ -73,7 +82,7 @@ pub enum SendTxSubcommands {
 
 impl SendTxArgs {
     pub async fn run(self) -> eyre::Result<()> {
-        let Self { to, mut sig, mut args, send_tx, tx, command, unlocked, data } = self;
+        let Self { to, mut sig, mut args, send_tx, tx, command, unlocked, force, data } = self;
         let fee_token = tx.tempo.fee_token;
 
         if let Some(data) = data {
@@ -100,6 +109,31 @@ impl SendTxArgs {
         } else {
             None
         };
+
+        // Check if this is a createToken call to the TIP20Factory and validate the currency code
+        if let Some(ref to_addr) = to {
+            let is_factory = match to_addr {
+                NameOrAddress::Address(addr) => *addr == TIP20_FACTORY_ADDRESS,
+                NameOrAddress::Name(name) => {
+                    Address::from_str(name).ok() == Some(TIP20_FACTORY_ADDRESS)
+                }
+            };
+
+            if !force
+                && is_factory
+                && let Some(ref sig_str) = sig
+                && sig_str.starts_with("createToken")
+                && let Some(currency) = args.get(2)
+                && !is_iso4217_currency(currency)
+            {
+                sh_warn!("{}", iso4217_warning_message(currency))?;
+                let response: String = foundry_common::prompt!("\nContinue anyway? [y/N] ")?;
+                if !matches!(response.trim(), "y" | "Y") {
+                    sh_println!("Aborted.")?;
+                    return Ok(());
+                }
+            }
+        }
 
         let config = send_tx.eth.load_config()?;
         let provider = get_tempo_provider_with_curl(&config, send_tx.eth.rpc.curl)?;
