@@ -16,10 +16,12 @@ We use `cargo-nextest` as test runner (both locally and in the [CI](#ci)):
 If you are working in VSCode, we recommend you install the [rust-analyzer](https://rust-analyzer.github.io/) extension, and use the following VSCode user settings:
 
 ```json
-"editor.formatOnSave": true,
-"rust-analyzer.rustfmt.extraArgs": ["+nightly"],
-"[rust]": {
-  "editor.defaultFormatter": "rust-lang.rust-analyzer"
+{
+  "editor.formatOnSave": true,
+  "rust-analyzer.rustfmt.extraArgs": ["+nightly"],
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  }
 }
 ```
 
